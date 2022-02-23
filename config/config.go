@@ -50,7 +50,7 @@ type Node struct {
 	PublicKey  *ecdsa.PublicKey  `json:"PublicKey,omitempty"`
 }
 
-func LoadConfig(filepath string) {
+func LoadConfig(filepath string, group, account int) {
 	data, err := files.ReadFile(filepath)
 	if err != nil {
 		panic(err)
@@ -58,6 +58,13 @@ func LoadConfig(filepath string) {
 
 	if err := json.Unmarshal(data, &Conf); err != nil {
 		panic(err)
+	}
+
+	if group > 0 {
+		Conf.Groups = group
+	}
+	if account > 0 {
+		Conf.Groups = account
 	}
 
 	for _, v := range Conf.Nodes {
