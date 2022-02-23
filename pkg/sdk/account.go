@@ -159,6 +159,12 @@ func (c *Account) Add(contract common.Address) (common.Hash, uint64, error) {
 	}
 
 	auth := c.makeAuth()
+	nonce, err := c.sender.client.NonceAt(context.Background(), c.address, nil)
+	if err != nil {
+		return common.EmptyHash, nonce, err
+	}
+	auth.Nonce = new(big.Int).SetUint64(nonce)
+
 	st, err := stat.NewStat(contract, c.sender.client)
 	if err != nil {
 		return common.EmptyHash, auth.Nonce.Uint64(), err
