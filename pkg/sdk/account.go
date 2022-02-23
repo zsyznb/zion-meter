@@ -6,7 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/contracts/native/utils"
 
 	stat "github.com/dylenfu/zion-meter/pkg/go_abi/stat_abi"
 	"github.com/dylenfu/zion-meter/pkg/log"
@@ -21,6 +25,16 @@ import (
 )
 
 var ErrNoSender = errors.New("no sender")
+
+var ABI *abi.ABI
+
+func init() {
+	ab, err := abi.JSON(strings.NewReader(stat.StatABI))
+	if err != nil {
+		panic(fmt.Sprintf("failed to load abi json string: [%v]", err))
+	}
+	ABI = &ab
+}
 
 type Sender struct {
 	url       string
@@ -158,22 +172,45 @@ func (c *Account) Add(contract common.Address) (common.Hash, uint64, error) {
 		return common.EmptyHash, c.nonce, ErrNoSender
 	}
 
-	auth := c.makeAuth()
+	//auth := c.makeAuth()
+	//nonce, err := c.sender.client.NonceAt(context.Background(), c.address, nil)
+	//if err != nil {
+	//	return common.EmptyHash, nonce, err
+	//}
+	//auth.Nonce = new(big.Int).SetUint64(nonce)
+	//
+	//st, err := stat.NewStat(contract, c.sender.client)
+	//if err != nil {
+	//	return common.EmptyHash, auth.Nonce.Uint64(), err
+	//}
+	//if tx, err := st.Add(auth); err != nil {
+	//	return common.EmptyHash, auth.Nonce.Uint64(), err
+	//} else {
+	//	return tx.Hash(), auth.Nonce.Uint64(), nil
+	//}
+
 	nonce, err := c.sender.client.NonceAt(context.Background(), c.address, nil)
 	if err != nil {
 		return common.EmptyHash, nonce, err
 	}
-	auth.Nonce = new(big.Int).SetUint64(nonce)
 
-	st, err := stat.NewStat(contract, c.sender.client)
+	c.nonce = nonce
+
+	payload, err := utils.PackMethod(ABI, "add")
 	if err != nil {
-		return common.EmptyHash, auth.Nonce.Uint64(), err
+		return common.EmptyHash, c.nonce, err
 	}
-	if tx, err := st.Add(auth); err != nil {
-		return common.EmptyHash, auth.Nonce.Uint64(), err
-	} else {
-		return tx.Hash(), auth.Nonce.Uint64(), nil
+
+	tx, err := c.newSignedTx(contract, big.NewInt(0), payload)
+	if err != nil {
+		return common.EmptyHash, c.nonce, err
 	}
+
+	if err := c.SendTx(tx); err != nil {
+		return common.EmptyHash, c.nonce, err
+	}
+
+	return tx.Hash(), c.nonce, nil
 }
 
 func (c *Account) TxNum(contract common.Address) (uint64, error) {
@@ -357,4 +394,14 @@ func (c *Account) getReceipt(hash common.Hash) (*types.Receipt, error) {
 		return nil, err
 	}
 	return raw, nil
+}
+
+func (c *Account) CallContract(caller, contractAddr common.Address, payload []byte, blockNum *big.Int) ([]byte, error) {
+	arg := ethereum.CallMsg{
+		From: caller,
+		To:   &contractAddr,
+		Data: payload,
+	}
+
+	return c.sender.client.CallContract(context.Background(), arg, blockNum)
 }
