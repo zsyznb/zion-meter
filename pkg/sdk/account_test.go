@@ -84,7 +84,7 @@ func TestStat(t *testing.T) {
 	sender, err := NewSender(testUrl, testChainID)
 	acc.SetSender(sender)
 	for i := 0; i < n; i++ {
-		if _, err := acc.Add(contract); err != nil {
+		if _, _, err := acc.Add(contract); err != nil {
 			t.Error(err)
 		}
 	}

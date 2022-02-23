@@ -93,8 +93,9 @@ func (u *User) run(contract common.Address) {
 	for {
 		select {
 		case <-u.sig:
-			if _, err := u.acc.Add(contract); err != nil {
-				log.Errorf("send tx failed, err: %v", err)
+			if tx, nonce, err := u.acc.Add(contract); err != nil {
+				log.Errorf("send tx %s failed, err: %v", tx.Hex(), err)
+				u.acc.ResetNonce(nonce)
 			}
 		case <-u.quit:
 			return
@@ -169,11 +170,13 @@ func (b *Box) Simulate() {
 	for {
 		select {
 		case <-ticker.C:
-			group := b.groups[cnt%len(b.groups)]
+			idx := cnt % len(b.groups)
+			group := b.groups[idx]
 			for _, user := range group {
 				user.sig <- struct{}{}
 			}
 			cnt += 1
+			log.Infof("group %d send txs", idx)
 		case <-b.quit:
 			return
 		}
@@ -181,15 +184,11 @@ func (b *Box) Simulate() {
 }
 
 func (b *Box) CalculateTPS() {
-	getTotal := func() (uint64, error) {
-		return b.master.TxNum(b.contract)
-	}
-
 	ticker := time.NewTicker(5 * time.Second)
 	for {
 		select {
 		case <-ticker.C:
-			total, err := getTotal()
+			total, err := b.master.TxNum(b.contract)
 			if err != nil {
 				log.Errorf("get total tx number failed, err: %v", err)
 			} else {

@@ -153,20 +153,20 @@ func (c *Account) Deploy(startTime uint64) (common.Address, error) {
 	return addr, nil
 }
 
-func (c *Account) Add(contract common.Address) (common.Hash, error) {
+func (c *Account) Add(contract common.Address) (common.Hash, uint64, error) {
 	if c.sender == nil {
-		return common.EmptyHash, ErrNoSender
+		return common.EmptyHash, c.nonce, ErrNoSender
 	}
 
 	auth := c.makeAuth()
 	st, err := stat.NewStat(contract, c.sender.client)
 	if err != nil {
-		return common.EmptyHash, err
+		return common.EmptyHash, auth.Nonce.Uint64(), err
 	}
 	if tx, err := st.Add(auth); err != nil {
-		return common.EmptyHash, err
+		return common.EmptyHash, auth.Nonce.Uint64(), err
 	} else {
-		return tx.Hash(), nil
+		return tx.Hash(), auth.Nonce.Uint64(), nil
 	}
 }
 
@@ -192,6 +192,10 @@ func (c *Account) Nonce() uint64 {
 	}()
 
 	return c.nonce
+}
+
+func (c *Account) ResetNonce(nonce uint64) {
+	c.nonce = nonce
 }
 
 func (c *Account) GetLocalAndRemoteNonce() (local, remote uint64, err error) {

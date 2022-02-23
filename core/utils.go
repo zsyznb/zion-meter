@@ -18,7 +18,7 @@ func masterAccount() (*sdk.Account, error) {
 // 每组N个账户，总共G组
 func generateAccounts() (int, [][]*User, error) {
 	chainID := config.Conf.ChainID
-	connNum := config.Conf.ConnNum
+	connNum := config.Conf.AccsPerGroup
 	nodeNum := len(config.Conf.Nodes)
 	senderList := make([]*sdk.Sender, 0)
 	for i := 0; i < connNum; i++ {
@@ -30,8 +30,8 @@ func generateAccounts() (int, [][]*User, error) {
 		senderList = append(senderList, sender)
 	}
 
-	groupNo := config.Conf.AccountGroupNum
-	AccNoPerGroup := config.Conf.AccountNumPerGroup
+	groupNo := config.Conf.Groups
+	AccNoPerGroup := config.Conf.AccsPerGroup
 	total := groupNo * AccNoPerGroup
 	list := make([][]*User, 0)
 	for i := 0; i < groupNo; i++ {

@@ -34,11 +34,10 @@ var (
 )
 
 type Config struct {
-	Workspace          string
-	ChainID            uint64
-	ConnNum            int // 客户端连接数
-	AccountGroupNum    int // 账户分组，总组数为`AccountGroupNum`，每秒切换不同组用户发送交易
-	AccountNumPerGroup int // 每组账户数量
+	Workspace    string
+	ChainID      uint64
+	Groups       int // 账户分组，总组数为`Groups`，每秒切换不同组用户发送交易
+	AccsPerGroup int // 每组账户数量
 
 	Nodes []*Node
 }
