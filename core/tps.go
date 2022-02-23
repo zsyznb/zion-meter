@@ -14,6 +14,8 @@ var (
 	gasUsage = new(big.Int).Mul(big.NewInt(1), ETH1)
 )
 
+const defaultStartTPS = 20
+
 // TPS try to test hotstuff tps, params nodeList represents multiple ethereum rpc url addresses,
 // and num denote that this test will use multi account to send simple transaction
 func TPS() bool {
@@ -48,12 +50,14 @@ func TPS() bool {
 	log.Splitf("deploy contract %s success", contract.Hex())
 
 	box := &Box{
-		startTime: startTime,
-		contract:  contract,
-		userCnt:   total,
-		master:    master,
-		groups:    groups,
-		quit:      make(chan struct{}),
+		startTps:   defaultStartTPS,
+		startTime:  startTime,
+		contract:   contract,
+		userCnt:    total,
+		master:     master,
+		groups:     groups,
+		txsRecords: make(map[int]int),
+		quit:       make(chan struct{}),
 	}
 
 	// prepare balance
@@ -104,12 +108,14 @@ func (u *User) run(contract common.Address) {
 }
 
 type Box struct {
-	startTime uint64
-	master    *sdk.Account
-	contract  common.Address
-	groups    [][]*User
-	userCnt   int
-	quit      chan struct{}
+	startTps   int
+	startTime  uint64
+	master     *sdk.Account
+	contract   common.Address
+	groups     [][]*User
+	txsRecords map[int]int
+	userCnt    int
+	quit       chan struct{}
 }
 
 func (b *Box) Deposit() error {
@@ -172,9 +178,20 @@ func (b *Box) Simulate() {
 		case <-ticker.C:
 			idx := cnt % len(b.groups)
 			group := b.groups[idx]
-			for _, user := range group {
+
+			// 交易量逐步增加
+			txn := b.startTps
+			if lastTps, ok := b.txsRecords[idx]; ok {
+				txn = lastTps + 1
+			}
+			if txn > len(group) {
+				txn = len(group)
+			}
+
+			for _, user := range group[:txn] {
 				user.sig <- struct{}{}
 			}
+
 			cnt += 1
 			log.Infof("group %d send txs", idx)
 		case <-b.quit:

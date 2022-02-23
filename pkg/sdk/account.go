@@ -202,7 +202,7 @@ func (c *Account) Add(contract common.Address) (common.Hash, uint64, error) {
 	}
 
 	originNonce := c.nonce
-	
+
 	tx, err := c.newSignedTx(contract, big.NewInt(0), payload)
 	if err != nil {
 		return common.EmptyHash, originNonce, err
