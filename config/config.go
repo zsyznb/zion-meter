@@ -64,7 +64,7 @@ func LoadConfig(filepath string, group, account int) {
 		Conf.Groups = group
 	}
 	if account > 0 {
-		Conf.Groups = account
+		Conf.AccsPerGroup = account
 	}
 
 	for _, v := range Conf.Nodes {
