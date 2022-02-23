@@ -189,28 +189,30 @@ func (c *Account) Add(contract common.Address) (common.Hash, uint64, error) {
 	//	return tx.Hash(), auth.Nonce.Uint64(), nil
 	//}
 
-	nonce, err := c.sender.client.NonceAt(context.Background(), c.address, nil)
-	if err != nil {
-		return common.EmptyHash, nonce, err
-	}
-
-	c.nonce = nonce
+	//nonce, err := c.sender.client.NonceAt(context.Background(), c.address, nil)
+	//if err != nil {
+	//	return common.EmptyHash, nonce, err
+	//}
+	//
+	//c.nonce = nonce
 
 	payload, err := utils.PackMethod(ABI, "add")
 	if err != nil {
 		return common.EmptyHash, c.nonce, err
 	}
 
+	originNonce := c.nonce
+	
 	tx, err := c.newSignedTx(contract, big.NewInt(0), payload)
 	if err != nil {
-		return common.EmptyHash, c.nonce, err
+		return common.EmptyHash, originNonce, err
 	}
 
 	if err := c.SendTx(tx); err != nil {
-		return common.EmptyHash, c.nonce, err
+		return common.EmptyHash, originNonce, err
 	}
 
-	return tx.Hash(), c.nonce, nil
+	return tx.Hash(), originNonce, nil
 }
 
 func (c *Account) TxNum(contract common.Address) (uint64, error) {

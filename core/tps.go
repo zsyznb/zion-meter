@@ -95,7 +95,7 @@ func (u *User) run(contract common.Address) {
 		case <-u.sig:
 			if tx, nonce, err := u.acc.Add(contract); err != nil {
 				log.Errorf("send tx %s failed, nonce %d, err: %v", tx.Hex(), nonce, err)
-				//u.acc.ResetNonce(nonce)
+				u.acc.ResetNonce(nonce)
 			}
 		case <-u.quit:
 			return
