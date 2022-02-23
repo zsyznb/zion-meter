@@ -191,6 +191,8 @@ func (b *Box) CalculateTPS() {
 			total, err := b.master.TxNum(b.contract)
 			if err != nil {
 				log.Errorf("get total tx number failed, err: %v", err)
+			} else if total == 0 {
+				log.Debugf("get total tx number 0")
 			} else {
 				endTime := uint64(time.Now().Unix())
 				tps := total / (endTime - b.startTime)
