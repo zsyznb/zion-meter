@@ -3,9 +3,9 @@ package sdk
 import (
 	"context"
 	"crypto/ecdsa"
+	"errors"
 	"fmt"
 	"math/big"
-	"sync"
 	"time"
 
 	stat "github.com/dylenfu/zion-meter/pkg/go_abi/stat_abi"
@@ -20,19 +20,39 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
-type Account struct {
-	pk      *ecdsa.PrivateKey
-	address common.Address
-	nonce   uint64
-	nonceMu sync.Mutex
+var ErrNoSender = errors.New("no sender")
 
+type Sender struct {
 	url       string
 	client    *ethclient.Client
 	rpcClient *rpc.Client
 	signer    types.EIP155Signer
 }
 
-func MasterAccount(url string, chainID uint64, hexkey string) (*Account, error) {
+func NewSender(url string, chainID uint64) (*Sender, error) {
+	signer := types.NewEIP155Signer(new(big.Int).SetUint64(chainID))
+	rpcclient, err := rpc.Dial(url)
+	if err != nil {
+		return nil, err
+	}
+	client := ethclient.NewClient(rpcclient)
+
+	return &Sender{
+		url:       url,
+		signer:    signer,
+		client:    client,
+		rpcClient: rpcclient,
+	}, nil
+}
+
+type Account struct {
+	pk      *ecdsa.PrivateKey
+	address common.Address
+	nonce   uint64
+	sender  *Sender
+}
+
+func MasterAccount(sender *Sender, hexkey string) (*Account, error) {
 	pk, err := crypto.HexToECDSA(hexkey)
 	if err != nil {
 		return nil, err
@@ -40,30 +60,20 @@ func MasterAccount(url string, chainID uint64, hexkey string) (*Account, error) 
 
 	addr := crypto.PubkeyToAddress(pk.PublicKey)
 
-	signer := types.NewEIP155Signer(new(big.Int).SetUint64(chainID))
-	rpcclient, err := rpc.Dial(url)
-	if err != nil {
-		return nil, err
-	}
-	client := ethclient.NewClient(rpcclient)
-
-	nonce, err := client.NonceAt(context.Background(), addr, nil)
+	nonce, err := sender.client.NonceAt(context.Background(), addr, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Account{
-		pk:        pk,
-		address:   addr,
-		nonce:     nonce,
-		url:       url,
-		signer:    signer,
-		client:    client,
-		rpcClient: rpcclient,
+		pk:      pk,
+		address: addr,
+		nonce:   nonce,
+		sender:  sender,
 	}, nil
 }
 
-func NewAccount(url string, chainID uint64) (*Account, error) {
+func NewAccount() (*Account, error) {
 	pk, err := crypto.GenerateKey()
 	if err != nil {
 		return nil, err
@@ -71,27 +81,19 @@ func NewAccount(url string, chainID uint64) (*Account, error) {
 
 	addr := crypto.PubkeyToAddress(pk.PublicKey)
 
-	signer := types.NewEIP155Signer(new(big.Int).SetUint64(chainID))
-	rpcclient, err := rpc.Dial(url)
-	if err != nil {
-		return nil, err
-	}
-	client := ethclient.NewClient(rpcclient)
-
-	nonce, err := client.NonceAt(context.Background(), addr, nil)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Account{
-		pk:        pk,
-		address:   addr,
-		nonce:     nonce,
-		url:       url,
-		signer:    signer,
-		client:    client,
-		rpcClient: rpcclient,
+		pk:      pk,
+		address: addr,
+		nonce:   0,
 	}, nil
+}
+
+func (c *Account) SetSender(sender *Sender) {
+	c.sender = sender
+}
+
+func (c *Account) GetSender() *Sender {
+	return c.sender
 }
 
 func (c *Account) Address() common.Address {
@@ -99,11 +101,17 @@ func (c *Account) Address() common.Address {
 }
 
 func (c *Account) Balance(blockNum *big.Int) (*big.Int, error) {
-	return c.client.BalanceAt(context.Background(), c.address, blockNum)
+	if c.sender == nil {
+		return nil, ErrNoSender
+	}
+	return c.sender.client.BalanceAt(context.Background(), c.address, blockNum)
 }
 
 func (c *Account) BalanceOf(addr common.Address, blockNum *big.Int) (*big.Int, error) {
-	return c.client.BalanceAt(context.Background(), addr, blockNum)
+	if c.sender == nil {
+		return nil, ErrNoSender
+	}
+	return c.sender.client.BalanceAt(context.Background(), addr, blockNum)
 }
 
 func (c *Account) TransferWithConfirm(to common.Address, amount *big.Int) (common.Hash, error) {
@@ -130,8 +138,12 @@ func (c *Account) Transfer(to common.Address, amount *big.Int) (common.Hash, err
 }
 
 func (c *Account) Deploy(startTime uint64) (common.Address, error) {
+	if c.sender == nil {
+		return common.EmptyAddress, ErrNoSender
+	}
+
 	auth := c.makeDeployAuth()
-	addr, tx, _, err := stat.DeployStat(auth, c.backend(), startTime)
+	addr, tx, _, err := stat.DeployStat(auth, c.sender.client, startTime)
 	if err != nil {
 		return common.EmptyAddress, err
 	}
@@ -142,8 +154,12 @@ func (c *Account) Deploy(startTime uint64) (common.Address, error) {
 }
 
 func (c *Account) Add(contract common.Address) (common.Hash, error) {
+	if c.sender == nil {
+		return common.EmptyHash, ErrNoSender
+	}
+
 	auth := c.makeAuth()
-	st, err := stat.NewStat(contract, c.backend())
+	st, err := stat.NewStat(contract, c.sender.client)
 	if err != nil {
 		return common.EmptyHash, err
 	}
@@ -155,7 +171,11 @@ func (c *Account) Add(contract common.Address) (common.Hash, error) {
 }
 
 func (c *Account) TxNum(contract common.Address) (uint64, error) {
-	st, err := stat.NewStat(contract, c.backend())
+	if c.sender == nil {
+		return 0, ErrNoSender
+	}
+
+	st, err := stat.NewStat(contract, c.sender.client)
 	if err != nil {
 		return 0, err
 	}
@@ -174,17 +194,24 @@ func (c *Account) Nonce() uint64 {
 	return c.nonce
 }
 
-func (c *Account) SendTx(signedTx *types.Transaction) error {
-	return c.client.SendTransaction(context.Background(), signedTx)
+func (c *Account) GetLocalAndRemoteNonce() (local, remote uint64, err error) {
+	remote, err = c.sender.client.NonceAt(context.Background(), c.address, nil)
+	if err != nil {
+		return
+	}
+	return local, remote, err
 }
 
-func (c *Account) backend() *ethclient.Client {
-	return c.client
+func (c *Account) SendTx(signedTx *types.Transaction) error {
+	if c.sender == nil {
+		return ErrNoSender
+	}
+	return c.sender.client.SendTransaction(context.Background(), signedTx)
 }
 
 func (c *Account) makeDeployAuth() *bind.TransactOpts {
 	auth := bind.NewKeyedTransactor(c.pk)
-	auth.GasLimit = 1e7
+	auth.GasLimit = 150000
 	auth.Nonce = new(big.Int).SetUint64(c.Nonce())
 	return auth
 }
@@ -220,16 +247,24 @@ func (c *Account) signAndSendTxWithValue(payload []byte, amount *big.Int, contra
 }
 
 func (c *Account) newSignedTx(to common.Address, amount *big.Int, data []byte) (*types.Transaction, error) {
+	if c.sender == nil {
+		return nil, ErrNoSender
+	}
+
 	unsignedTx, err := c.newUnsignedTx(to, amount, data)
 	if err != nil {
 		return nil, err
 	}
-	return types.SignTx(unsignedTx, c.signer, c.pk)
+	return types.SignTx(unsignedTx, c.sender.signer, c.pk)
 }
 
 func (c *Account) newUnsignedTx(to common.Address, amount *big.Int, data []byte) (*types.Transaction, error) {
+	if c.sender == nil {
+		return nil, ErrNoSender
+	}
+
 	nonce := c.Nonce()
-	gasPrice, err := c.client.SuggestGasPrice(context.Background())
+	gasPrice, err := c.sender.client.SuggestGasPrice(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +277,7 @@ func (c *Account) newUnsignedTx(to common.Address, amount *big.Int, data []byte)
 		Value:    amount,
 		Data:     data,
 	}
-	gasLimit, err := c.client.EstimateGas(context.Background(), callMsg)
+	gasLimit, err := c.sender.client.EstimateGas(context.Background(), callMsg)
 	if err != nil {
 		return nil, fmt.Errorf("estimate gas limit error: %s", err.Error())
 	}
@@ -258,9 +293,13 @@ func (c *Account) newUnsignedTx(to common.Address, amount *big.Int, data []byte)
 }
 
 func (c *Account) waitTransaction(hash common.Hash) error {
+	if c.sender == nil {
+		return ErrNoSender
+	}
+
 	for {
 		time.Sleep(time.Second * 1)
-		_, ispending, err := c.client.TransactionByHash(context.Background(), hash)
+		_, ispending, err := c.sender.client.TransactionByHash(context.Background(), hash)
 		if err != nil {
 			log.Errorf("failed to call TransactionByHash: %v", err)
 			continue
@@ -299,8 +338,12 @@ func (c *Account) dumpEventLog(hash common.Hash) error {
 }
 
 func (c *Account) getReceipt(hash common.Hash) (*types.Receipt, error) {
+	if c.sender == nil {
+		return nil, ErrNoSender
+	}
+
 	raw := &types.Receipt{}
-	if err := c.rpcClient.Call(raw, "eth_getTransactionReceipt", hash.Hex()); err != nil {
+	if err := c.sender.rpcClient.Call(raw, "eth_getTransactionReceipt", hash.Hex()); err != nil {
 		return nil, err
 	}
 	return raw, nil

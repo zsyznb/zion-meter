@@ -36,7 +36,8 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	testMaster, _ = MasterAccount(testUrl, testChainID, testMainNodeKey)
+	sender, _ := NewSender(testUrl, testChainID)
+	testMaster, _ = MasterAccount(sender, testMainNodeKey)
 	os.Exit(m.Run())
 }
 
@@ -61,10 +62,10 @@ func TestTransfer(t *testing.T) {
 
 // go test -v github.com/dylenfu/zion-meter/pkg/sdk -run TestStat
 func TestStat(t *testing.T) {
-	n := 100
+	n := 10000
 	startTime := uint64(time.Now().Unix())
 
-	acc, err := NewAccount(testUrl, testChainID)
+	acc, err := NewAccount()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,6 +81,8 @@ func TestStat(t *testing.T) {
 	}
 	t.Logf("contract address %s, start time %d, nonce before testing %d", contract.Hex(), startTime, acc.nonce)
 
+	sender, err := NewSender(testUrl, testChainID)
+	acc.SetSender(sender)
 	for i := 0; i < n; i++ {
 		if _, err := acc.Add(contract); err != nil {
 			t.Error(err)

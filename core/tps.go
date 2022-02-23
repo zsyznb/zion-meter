@@ -4,7 +4,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/dylenfu/zion-meter/config"
 	"github.com/dylenfu/zion-meter/pkg/log"
 	"github.com/dylenfu/zion-meter/pkg/sdk"
 	"github.com/ethereum/go-ethereum/common"
@@ -29,6 +28,15 @@ func TPS() bool {
 	}
 	log.Split("generate master account success!")
 
+	// create account
+	log.Info("try to generate multi test accounts...")
+	total, groups, err := generateAccounts()
+	if err != nil {
+		log.Errorf("generate multi testing accounts failed, err: %v", err)
+		return false
+	}
+	log.Split("generated multi test accounts success!")
+
 	// deploy contract
 	startTime := uint64(time.Now().Unix())
 	log.Info("try to deploy contract...")
@@ -39,69 +47,145 @@ func TPS() bool {
 	}
 	log.Splitf("deploy contract %s success", contract.Hex())
 
-	// create account
-	log.Info("try to generate multi test accounts...")
-	accounts, err := generateAccounts()
-	if err != nil {
-		log.Errorf("generate multi testing accounts failed, err: %v", err)
-		return false
+	box := &Box{
+		startTime: startTime,
+		contract:  contract,
+		userCnt:   total,
+		master:    master,
+		groups:    groups,
+		quit:      make(chan struct{}),
 	}
-	log.Split("generated multi test accounts success!")
 
 	// prepare balance
 	log.Info("try to prepare test accounts balance...")
-	if err := prepareTestingAccountsBalance(master, accounts); err != nil {
+	if err := box.Deposit(); err != nil {
 		log.Errorf("prepare testing accounts balance failed, err: %v", err)
 		return false
 	}
 	log.Split("prepare test accounts balance success!")
 
-	// send transactions continuously
+	// send transactions continuously and calculate tps
 	log.Infof("start to send tx and calculate tps...")
-	for _, acc := range accounts {
-		go sendTxs(acc, contract)
-	}
+	box.Start()
+	go box.Simulate()
+	box.CalculateTPS()
 
-	// calculate and print tps
-	calculateTPS(master, contract, startTime)
 	return true
 }
 
-func prepareTestingAccountsBalance(master *sdk.Account, accounts []*sdk.Account) error {
-	for _, acc := range accounts {
-		if _, err := master.Transfer(acc.Address(), gasUsage); err != nil {
-			return err
+const userSigChanCap = 100
+
+type User struct {
+	acc  *sdk.Account
+	sig  chan struct{}
+	quit chan struct{}
+}
+
+func newUser(acc *sdk.Account) *User {
+	return &User{
+		acc:  acc,
+		sig:  make(chan struct{}, userSigChanCap),
+		quit: make(chan struct{}, 1),
+	}
+}
+
+func (u *User) run(contract common.Address) {
+	for {
+		select {
+		case <-u.sig:
+			if _, err := u.acc.Add(contract); err != nil {
+				log.Errorf("send tx failed, err: %v", err)
+			}
+		case <-u.quit:
+			return
 		}
 	}
-	time.Sleep(15 * time.Second)
-	for _, acc := range accounts {
-		balance, err := master.BalanceOf(acc.Address(), nil)
+}
+
+type Box struct {
+	startTime uint64
+	master    *sdk.Account
+	contract  common.Address
+	groups    [][]*User
+	userCnt   int
+	quit      chan struct{}
+}
+
+func (b *Box) Deposit() error {
+	allUser := make(map[common.Address]struct{})
+	for _, group := range b.groups {
+		for _, user := range group {
+			if _, err := b.master.Transfer(user.acc.Address(), gasUsage); err != nil {
+				return err
+			}
+			allUser[user.acc.Address()] = struct{}{}
+		}
+	}
+
+	time.Sleep(10 * time.Second)
+
+retry:
+	for addr, _ := range allUser {
+		balance, err := b.master.BalanceOf(addr, nil)
 		if err != nil {
 			return err
 		}
-		log.Infof("%s balance %s", acc.Address().Hex(), balance.String())
+		if balance.Cmp(gasUsage) >= 0 {
+			delete(allUser, addr)
+		}
 	}
+
+	if len(allUser) > 0 {
+		time.Sleep(5 * time.Second)
+		log.Infof("there are %d account need to preparing", len(allUser))
+		goto retry
+	}
+
 	return nil
 }
 
-func sendTxs(acc *sdk.Account, contract common.Address) {
-	ticker := time.NewTicker(time.Second)
-	txn := config.Conf.TxsPerSecond
-	for range ticker.C {
-		for i := 0; i < txn; i++ {
-			if _, err := acc.Add(contract); err != nil {
-				log.Errorf("send tx failed, err: %v", err)
-			}
+// 每个用户在接收到信号后发送交易
+func (b *Box) Start() {
+	for _, group := range b.groups {
+		for _, user := range group {
+			go user.run(b.contract)
 		}
 	}
 }
 
-func calculateTPS(master *sdk.Account, contract common.Address, startTime uint64) {
+func (b *Box) Stop() {
+	for _, group := range b.groups {
+		for _, user := range group {
+			close(user.quit)
+		}
+	}
+	close(b.quit)
+}
+
+// 每秒选择一组用户发送信号
+func (b *Box) Simulate() {
+	ticker := time.NewTicker(1 * time.Second)
+	cnt := 0
+	for {
+		select {
+		case <-ticker.C:
+			group := b.groups[cnt%len(b.groups)]
+			for _, user := range group {
+				user.sig <- struct{}{}
+			}
+			cnt += 1
+		case <-b.quit:
+			return
+		}
+	}
+}
+
+func (b *Box) CalculateTPS() {
 	getTotal := func() (uint64, error) {
-		return master.TxNum(contract)
+		return b.master.TxNum(b.contract)
 	}
 
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	for {
 		select {
 		case <-ticker.C:
@@ -110,9 +194,11 @@ func calculateTPS(master *sdk.Account, contract common.Address, startTime uint64
 				log.Errorf("get total tx number failed, err: %v", err)
 			} else {
 				endTime := uint64(time.Now().Unix())
-				tps := total / (endTime - startTime)
-				log.Infof("start time %d, end time %d, total tx number %d, tps %d", startTime, endTime, total, tps)
+				tps := total / (endTime - b.startTime)
+				log.Infof("start time %d, end time %d, total tx number %d, tps %d", b.startTime, endTime, total, tps)
 			}
+		case <-b.quit:
+			return
 		}
 	}
 }

@@ -27,27 +27,4 @@ var (
 		Usage: "server config file `<path>`",
 		Value: "./config.json",
 	}
-
-	NumberFlag = cli.Uint64Flag{
-		Name:  "num",
-		Usage: "test instance number, e.g: user number in tps/stable testing",
-		Value: 1,
-	}
-
-	PeriodFlag = cli.StringFlag{
-		Name:  "period",
-		Usage: "set lasting time, e.g: 1d, 1d2h, 1d2h30m40s",
-	}
-
-	TxPerPeriod = cli.Uint64Flag{
-		Name:  "txn",
-		Usage: "set tx number per period",
-		Value: 10,
-	}
-
-	IncrGasPrice = cli.Uint64Flag{
-		Name:  "inc",
-		Usage: "gas price increase n wei",
-		Value: 0,
-	}
 )
