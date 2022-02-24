@@ -173,7 +173,7 @@ func (b *Box) Stop() {
 func (b *Box) Simulate() {
 	// reset start time
 	b.startTime = uint64(time.Now().Unix())
-	
+
 	ticker := time.NewTicker(1 * time.Second)
 	cnt := 0
 	for {
@@ -207,6 +207,8 @@ func (b *Box) Simulate() {
 
 func (b *Box) CalculateTPS() {
 	ticker := time.NewTicker(5 * time.Second)
+	lastTxn := uint64(0)
+	lastEndTime := uint64(time.Now().Unix())
 	for {
 		select {
 		case <-ticker.C:
@@ -217,8 +219,14 @@ func (b *Box) CalculateTPS() {
 				log.Debugf("get total tx number 0")
 			} else {
 				endTime := uint64(time.Now().Unix())
-				tps := total / (endTime - b.startTime)
-				log.Infof("start time %d, end time %d, total tx number %d, tps %d", b.startTime, endTime, total, tps)
+				txAdded := total - lastTxn
+				duration := endTime - lastEndTime
+				tps := txAdded / duration
+				average := total / (endTime - b.startTime)
+				log.Infof("start time %d, end time %d, total tx number %d, duration %d, tx added %d, tps %d, average %d",
+					lastEndTime, endTime, total, duration, txAdded, tps, average)
+				lastTxn = total
+				lastEndTime = endTime
 			}
 		case <-b.quit:
 			return
