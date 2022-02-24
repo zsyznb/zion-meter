@@ -183,6 +183,8 @@ func (b *Box) Simulate() {
 			txn := b.startTps
 			if lastTps, ok := b.txsRecords[idx]; ok {
 				txn = lastTps + 1
+			} else {
+				b.txsRecords[idx] = b.startTps
 			}
 			if txn > len(group) {
 				txn = len(group)
