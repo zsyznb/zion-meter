@@ -4,6 +4,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/dylenfu/zion-meter/config"
+
 	"github.com/dylenfu/zion-meter/pkg/log"
 	"github.com/dylenfu/zion-meter/pkg/sdk"
 	"github.com/ethereum/go-ethereum/common"
@@ -13,8 +15,6 @@ var (
 	ETH1, _  = new(big.Int).SetString("1000000000000000000", 10)
 	gasUsage = new(big.Int).Mul(big.NewInt(1), ETH1)
 )
-
-const defaultStartTPS = 20
 
 // TPS try to test hotstuff tps, params nodeList represents multiple ethereum rpc url addresses,
 // and num denote that this test will use multi account to send simple transaction
@@ -50,7 +50,7 @@ func TPS() bool {
 	log.Splitf("deploy contract %s success", contract.Hex())
 
 	box := &Box{
-		startTps:   defaultStartTPS,
+		startTps:   config.MinTPS,
 		startTime:  startTime,
 		contract:   contract,
 		userCnt:    total,
@@ -206,7 +206,7 @@ func (b *Box) Simulate() {
 }
 
 func (b *Box) CalculateTPS() {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	lastTxn := uint64(0)
 	lastEndTime := uint64(time.Now().Unix())
 	for {

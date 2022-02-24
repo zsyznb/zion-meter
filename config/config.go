@@ -29,6 +29,11 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+const (
+	MinTPS = 20
+	MinGroup = 2
+)
+
 var (
 	Conf *Config
 )
@@ -51,6 +56,10 @@ type Node struct {
 }
 
 func LoadConfig(filepath string, group, account int) {
+	if account < MinTPS || group < MinGroup {
+		panic("user per group should > 20 and group number should > 2")
+	}
+
 	data, err := files.ReadFile(filepath)
 	if err != nil {
 		panic(err)
