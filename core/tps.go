@@ -206,7 +206,9 @@ func (b *Box) Simulate() {
 }
 
 func (b *Box) CalculateTPS() {
-	ticker := time.NewTicker(10 * time.Second)
+	// n组全部轮完算一轮tps
+	ticker := time.NewTicker(time.Duration(config.Conf.Groups) * time.Second)
+	
 	lastTxn := uint64(0)
 	lastEndTime := uint64(time.Now().Unix())
 	for {
