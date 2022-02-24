@@ -180,12 +180,12 @@ func (b *Box) Simulate() {
 			group := b.groups[idx]
 
 			// 交易量逐步增加
-			txn := b.startTps
-			if lastTps, ok := b.txsRecords[idx]; ok {
-				txn = lastTps + 1
-			} else {
+			if _, ok := b.txsRecords[idx]; !ok {
 				b.txsRecords[idx] = b.startTps
+			} else {
+				b.txsRecords[idx] += 1
 			}
+			txn := b.txsRecords[idx]
 			if txn > len(group) {
 				txn = len(group)
 			}
