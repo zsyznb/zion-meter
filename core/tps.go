@@ -171,6 +171,9 @@ func (b *Box) Stop() {
 
 // 每秒选择一组用户发送信号
 func (b *Box) Simulate() {
+	// reset start time
+	b.startTime = uint64(time.Now().Unix())
+	
 	ticker := time.NewTicker(1 * time.Second)
 	cnt := 0
 	for {
