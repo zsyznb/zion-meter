@@ -6,6 +6,18 @@
 	"output": {
 		"abi": [
 			{
+				"inputs": [],
+				"stateMutability": "nonpayable",
+				"type": "constructor"
+			},
+			{
+				"inputs": [],
+				"name": "add",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
 				"inputs": [
 					{
 						"internalType": "uint64",
@@ -13,12 +25,7 @@
 						"type": "uint64"
 					}
 				],
-				"stateMutability": "nonpayable",
-				"type": "constructor"
-			},
-			{
-				"inputs": [],
-				"name": "add",
+				"name": "reset",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -78,10 +85,10 @@
 	},
 	"sources": {
 		"stat.sol": {
-			"keccak256": "0xc96a35f5de4debd8db1a06456e74891a04672b3dade4dc2724cd385e06104fb4",
+			"keccak256": "0x471753734284d8b27ab7d145c02eced066a15f7dff4a1a7b490e5f8acf326ccd",
 			"urls": [
-				"bzz-raw://04acf643d0f050deadf1be98e20ab96142681d817fb92205447ec102154ef9e3",
-				"dweb:/ipfs/QmNtzUvZUmbSRFnqaLDTJHotTMWucoFDQg4RcwmZkmUCFJ"
+				"bzz-raw://653850d9fa6ef266b51863ed514938dd0ce43352808ba1301c78bd591ec70d62",
+				"dweb:/ipfs/QmShMmcYVqec9otbNmQuCtLjC1Zcc8JjFtSX6Fc2CTPXe3"
 			]
 		}
 	},

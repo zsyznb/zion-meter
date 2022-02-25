@@ -45,6 +45,7 @@ type Config struct {
 	AccsPerGroup int    // 每组账户数量
 	Sharding     bool   // 是否需要多台机器测试
 	FirstMachine string // 第一台机器内网地址，只需第一台机器统计tps，其他的不需要
+	Contract     string
 	Nodes        []*Node
 }
 

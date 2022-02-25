@@ -5,9 +5,13 @@ contract stat  {
     uint public txNum;
     uint64 public startTime;
     
-    constructor(uint64 _startTime) public {
-        startTime = _startTime;
+    constructor() public {
     }
+
+	function reset(uint64 _startTime) public {
+		startTime = _startTime;
+		txNum = 0;
+	}
 
     function add() public {
         txNum += 1;

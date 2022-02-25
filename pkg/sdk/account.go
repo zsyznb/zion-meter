@@ -9,15 +9,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/contracts/native/utils"
-
 	stat "github.com/dylenfu/zion-meter/pkg/go_abi/stat_abi"
 	"github.com/dylenfu/zion-meter/pkg/log"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -151,13 +150,13 @@ func (c *Account) Transfer(to common.Address, amount *big.Int) (common.Hash, err
 	}
 }
 
-func (c *Account) Deploy(startTime uint64) (common.Address, error) {
+func (c *Account) Deploy() (common.Address, error) {
 	if c.sender == nil {
 		return common.EmptyAddress, ErrNoSender
 	}
 
 	auth := c.makeDeployAuth()
-	addr, tx, _, err := stat.DeployStat(auth, c.sender.client, startTime)
+	addr, tx, _, err := stat.DeployStat(auth, c.sender.client)
 	if err != nil {
 		return common.EmptyAddress, err
 	}
@@ -165,6 +164,26 @@ func (c *Account) Deploy(startTime uint64) (common.Address, error) {
 		return common.EmptyAddress, err
 	}
 	return addr, nil
+}
+
+func (c *Account) Reset(contract common.Address, startTime uint64) (common.Hash, error) {
+	if c.sender == nil {
+		return common.EmptyHash, ErrNoSender
+	}
+	st, err := stat.NewStat(contract, c.sender.client)
+	if err != nil {
+		return common.EmptyHash, err
+	}
+	auth := c.makeAuth()
+	auth.GasLimit = 500000
+	tx, err := st.Reset(auth, startTime)
+	if err != nil {
+		return common.EmptyHash, err
+	}
+	if err := c.waitTransaction(tx.Hash()); err != nil {
+		return common.EmptyHash, err
+	}
+	return tx.Hash(), nil
 }
 
 func (c *Account) Add(contract common.Address) (common.Hash, uint64, error) {

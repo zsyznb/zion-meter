@@ -29,32 +29,35 @@ var (
 var (
 	MethodAdd = "add"
 
+	MethodReset = "reset"
+
 	MethodStartTime = "startTime"
 
 	MethodTxNum = "txNum"
 )
 
 // StatABI is the input ABI used to generate the binding from.
-const StatABI = "[{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"_startTime\",\"type\":\"uint64\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"constant\":false,\"inputs\":[],\"name\":\"add\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"startTime\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"txNum\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
+const StatABI = "[{\"inputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"constant\":false,\"inputs\":[],\"name\":\"add\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"_startTime\",\"type\":\"uint64\"}],\"name\":\"reset\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"startTime\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"txNum\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
 
 // StatFuncSigs maps the 4-byte function signature to its string representation.
 var StatFuncSigs = map[string]string{
 	"4f2be91f": "add()",
+	"e365981c": "reset(uint64)",
 	"78e97925": "startTime()",
 	"3a4ef544": "txNum()",
 }
 
 // StatBin is the compiled bytecode used for deploying new contracts.
-var StatBin = "0x608060405234801561001057600080fd5b5060405161013c38038061013c8339818101604052602081101561003357600080fd5b5051600180546001600160401b0319166001600160401b0390921691909117905560da806100626000396000f3fe6080604052348015600f57600080fd5b5060043610603c5760003560e01c80633a4ef5441460415780634f2be91f14605957806378e97925146061575b600080fd5b60476084565b60408051918252519081900360200190f35b605f608a565b005b60676095565b6040805167ffffffffffffffff9092168252519081900360200190f35b60005481565b600080546001019055565b60015467ffffffffffffffff168156fea265627a7a72315820c36b94dcbf75bfd49499bd38845ea37bcf0bb3598058dda9e8e9df7b1d90cc4164736f6c63430005110032"
+var StatBin = "0x608060405234801561001057600080fd5b50610130806100206000396000f3fe6080604052348015600f57600080fd5b506004361060465760003560e01c80633a4ef54414604b5780634f2be91f14606357806378e9792514606b578063e365981c14608e575b600080fd5b605160b2565b60408051918252519081900360200190f35b606960b8565b005b607160c3565b6040805167ffffffffffffffff9092168252519081900360200190f35b60696004803603602081101560a257600080fd5b503567ffffffffffffffff1660d3565b60005481565b600080546001019055565b60015467ffffffffffffffff1681565b6001805467ffffffffffffffff191667ffffffffffffffff929092169190911790556000805556fea265627a7a72315820827e69ce9ab1a1c925abcf663cc31e5d94e26b78ad14e0035ca9eeeabfeef7d564736f6c63430005110032"
 
 // DeployStat deploys a new Ethereum contract, binding an instance of Stat to it.
-func DeployStat(auth *bind.TransactOpts, backend bind.ContractBackend, _startTime uint64) (common.Address, *types.Transaction, *Stat, error) {
+func DeployStat(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *Stat, error) {
 	parsed, err := abi.JSON(strings.NewReader(StatABI))
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
 
-	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(StatBin), backend, _startTime)
+	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(StatBin), backend)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
@@ -284,5 +287,26 @@ func (_Stat *StatSession) Add() (*types.Transaction, error) {
 // Solidity: function add() returns()
 func (_Stat *StatTransactorSession) Add() (*types.Transaction, error) {
 	return _Stat.Contract.Add(&_Stat.TransactOpts)
+}
+
+// Reset is a paid mutator transaction binding the contract method 0xe365981c.
+//
+// Solidity: function reset(uint64 _startTime) returns()
+func (_Stat *StatTransactor) Reset(opts *bind.TransactOpts, _startTime uint64) (*types.Transaction, error) {
+	return _Stat.contract.Transact(opts, "reset", _startTime)
+}
+
+// Reset is a paid mutator transaction binding the contract method 0xe365981c.
+//
+// Solidity: function reset(uint64 _startTime) returns()
+func (_Stat *StatSession) Reset(_startTime uint64) (*types.Transaction, error) {
+	return _Stat.Contract.Reset(&_Stat.TransactOpts, _startTime)
+}
+
+// Reset is a paid mutator transaction binding the contract method 0xe365981c.
+//
+// Solidity: function reset(uint64 _startTime) returns()
+func (_Stat *StatTransactorSession) Reset(_startTime uint64) (*types.Transaction, error) {
+	return _Stat.Contract.Reset(&_Stat.TransactOpts, _startTime)
 }
 

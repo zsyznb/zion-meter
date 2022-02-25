@@ -40,13 +40,13 @@ func TPS() bool {
 
 	// deploy contract
 	startTime := uint64(time.Now().Unix())
-	log.Info("try to deploy contract...")
-	contract, err := master.Deploy(startTime)
-	if err != nil {
-		log.Errorf("deploy test contract failed, err: %v", err)
+	log.Info("try to reset contract...")
+	contract := common.HexToAddress(config.Conf.Contract)
+	if _, err := master.Reset(contract, startTime); err != nil {
+		log.Errorf("reset test contract failed, err: %v", err)
 		return false
 	}
-	log.Splitf("deploy contract %s success", contract.Hex())
+	log.Splitf("reset contract %s success", contract.Hex())
 
 	box := &Box{
 		startTps:   config.MinTPS,
