@@ -72,7 +72,15 @@ func TPS() bool {
 
 	// send transactions continuously and calculate tps
 	log.Infof("start to send tx and calculate tps...")
+	lastTime, err := time.ParseDuration(config.Conf.LastTime)
+	if err != nil {
+		log.Errorf("parse last time failed, err: %v", err)
+		return false
+	}
 	box.Start()
+	time.AfterFunc(lastTime, func() {
+		box.Stop()
+	})
 	if IsLeader() {
 		log.Infof("the first machine will calculate tps")
 		go box.Simulate()

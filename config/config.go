@@ -45,6 +45,7 @@ type Config struct {
 	AccsPerGroup int    // 每组账户数量
 	Sharding     bool   // 是否需要多台机器测试
 	FirstMachine string // 第一台机器内网地址，只需第一台机器统计tps，其他的不需要
+	LastTime     string
 	Contract     string
 	Nodes        []*Node
 }
@@ -57,7 +58,7 @@ type Node struct {
 	PublicKey  *ecdsa.PublicKey  `json:"PublicKey,omitempty"`
 }
 
-func LoadConfig(filepath string, group, account int) {
+func LoadConfig(filepath string, group, account int, sLastTime string) {
 	if account < MinTPS || group < MinGroup {
 		panic("user per group should > 20 and group number should > 2")
 	}
@@ -76,6 +77,9 @@ func LoadConfig(filepath string, group, account int) {
 	}
 	if account > 0 {
 		Conf.AccsPerGroup = account
+	}
+	if sLastTime != "" {
+		Conf.LastTime = sLastTime
 	}
 
 	for _, v := range Conf.Nodes {
