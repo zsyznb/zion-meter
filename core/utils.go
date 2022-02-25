@@ -97,7 +97,7 @@ func InternalIP() string {
 
 // 如果不需要多台机器，则直接返回true，本机需要统计tps;
 // 如果需要多台机器，则判断本机是否为第一台机器地址，是则返回true
-func CheckCalculateTPS() bool {
+func IsLeader() bool {
 	if !config.Conf.Sharding {
 		return true
 	}

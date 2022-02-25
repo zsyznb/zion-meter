@@ -38,15 +38,18 @@ func TPS() bool {
 	}
 	log.Split("generated multi test accounts success!")
 
-	// deploy contract
-	startTime := uint64(time.Now().Unix())
-	log.Info("try to reset contract...")
+	// leader reset contract
+	leader := IsLeader()
 	contract := common.HexToAddress(config.Conf.Contract)
-	if _, err := master.Reset(contract, startTime); err != nil {
-		log.Errorf("reset test contract failed, err: %v", err)
-		return false
+	startTime := uint64(time.Now().Unix())
+	if leader {
+		log.Info("try to reset contract...")
+		if _, err := master.Reset(contract, startTime); err != nil {
+			log.Errorf("reset test contract failed, err: %v", err)
+			return false
+		}
+		log.Splitf("reset contract %s success", contract.Hex())
 	}
-	log.Splitf("reset contract %s success", contract.Hex())
 
 	box := &Box{
 		startTps:   config.MinTPS,
@@ -70,7 +73,7 @@ func TPS() bool {
 	// send transactions continuously and calculate tps
 	log.Infof("start to send tx and calculate tps...")
 	box.Start()
-	if CheckCalculateTPS() {
+	if IsLeader() {
 		log.Infof("the first machine will calculate tps")
 		go box.Simulate()
 		box.CalculateTPS()
