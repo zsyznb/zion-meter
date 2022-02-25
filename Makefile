@@ -15,6 +15,7 @@ compile-linux:
 run:
 	@echo group number $(group)
 	@echo user number per group $(user)
-	./build/$(ENV)/meter -config=build/$(ENV)/config.json -group=$(group) -user=$(user)
+	@echo last time $(last)
+	./build/$(ENV)/meter -config=build/$(ENV)/config.json -group=$(group) -user=$(user) -last=$(last)
 
 clean:
