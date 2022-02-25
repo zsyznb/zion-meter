@@ -20,8 +20,8 @@ package core
 
 import "testing"
 
-func TestSimple(t *testing.T) {
-	x := []int{1, 2, 3, 4, 5, 6, 7}
-	a := len(x)
-	t.Log(x[:a+1])
+// go test -v github.com/dylenfu/zion-meter/core -run TestInternalIP
+func TestInternalIP(t *testing.T) {
+	ip := InternalIP()
+	t.Logf("lo ip %s", ip)
 }

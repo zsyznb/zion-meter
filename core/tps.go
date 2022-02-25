@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/dylenfu/zion-meter/config"
-
 	"github.com/dylenfu/zion-meter/pkg/log"
 	"github.com/dylenfu/zion-meter/pkg/sdk"
 	"github.com/ethereum/go-ethereum/common"
@@ -71,8 +70,14 @@ func TPS() bool {
 	// send transactions continuously and calculate tps
 	log.Infof("start to send tx and calculate tps...")
 	box.Start()
-	go box.Simulate()
-	box.CalculateTPS()
+	if CheckCalculateTPS() {
+		log.Infof("the first machine will calculate tps")
+		go box.Simulate()
+		box.CalculateTPS()
+	} else {
+		log.Infof("machine do not need to calculate tps")
+		box.Simulate()
+	}
 
 	return true
 }
@@ -120,9 +125,23 @@ type Box struct {
 
 func (b *Box) Deposit() error {
 	allUser := make(map[common.Address]struct{})
+
+	// 先用master给某个新用户转出本次测试总共所需要的gas
+	userCnt := config.Conf.Groups * config.Conf.AccsPerGroup
+	sender, err := singleAccount()
+	if err != nil {
+		return err
+	}
+	amount := new(big.Int).Add(new(big.Int).Mul(big.NewInt(int64(userCnt)), gasUsage), ETH1)
+	if _, err := b.master.TransferWithConfirm(sender.Address(), amount); err != nil {
+		return err
+	}
+	time.Sleep(6 * time.Second)
+
+	// 然后由新用户独立给每个用户转gasusage
 	for _, group := range b.groups {
 		for _, user := range group {
-			if _, err := b.master.Transfer(user.acc.Address(), gasUsage); err != nil {
+			if _, err := sender.Transfer(user.acc.Address(), gasUsage); err != nil {
 				return err
 			}
 			allUser[user.acc.Address()] = struct{}{}
@@ -208,7 +227,7 @@ func (b *Box) Simulate() {
 func (b *Box) CalculateTPS() {
 	// n组全部轮完算一轮tps
 	ticker := time.NewTicker(time.Duration(config.Conf.Groups) * time.Second)
-	
+
 	lastTxn := uint64(0)
 	lastEndTime := uint64(time.Now().Unix())
 	for {
