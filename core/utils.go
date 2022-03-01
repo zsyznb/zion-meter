@@ -11,17 +11,17 @@ import (
 func masterAccount() (*sdk.Account, error) {
 	chainID := config.Conf.ChainID
 	node := config.Conf.Nodes[0]
-	sender, err := sdk.NewSender(node.Url, chainID)
+	sender, err := sdk.NewSender(node, chainID)
 	if err != nil {
 		return nil, err
 	}
-	return sdk.MasterAccount(sender, node.NodeKey)
+	return sdk.MasterAccount(sender, config.Conf.NodeKey)
 }
 
 func singleAccount() (*sdk.Account, error) {
 	chainID := config.Conf.ChainID
 	node := config.Conf.Nodes[0]
-	sender, err := sdk.NewSender(node.Url, chainID)
+	sender, err := sdk.NewSender(node, chainID)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func generateAccounts() (int, [][]*User, error) {
 	senderList := make([]*sdk.Sender, 0)
 	for i := 0; i < connNum; i++ {
 		node := config.Conf.Nodes[i%nodeNum]
-		sender, err := sdk.NewSender(node.Url, chainID)
+		sender, err := sdk.NewSender(node, chainID)
 		if err != nil {
 			return 0, nil, err
 		}

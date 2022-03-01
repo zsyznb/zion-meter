@@ -18,15 +18,9 @@
 package config
 
 import (
-	"crypto/ecdsa"
 	"encoding/json"
-	"io/ioutil"
-	"strings"
 
 	"github.com/dylenfu/zion-meter/pkg/files"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 const (
@@ -47,15 +41,8 @@ type Config struct {
 	FirstMachine string // 第一台机器内网地址，只需第一台机器统计tps，其他的不需要
 	LastTime     string
 	Contract     string
-	Nodes        []*Node
-}
-
-type Node struct {
-	NodeKey    string            `json:"NodeKey"`
-	Url        string            `json:"Url"`
-	Address    common.Address    `json:"Address,omitempty"`
-	PrivateKey *ecdsa.PrivateKey `json:"PrivateKey,omitempty"`
-	PublicKey  *ecdsa.PublicKey  `json:"PublicKey,omitempty"`
+	NodeKey      string
+	Nodes        []string
 }
 
 func LoadConfig(filepath string, group, account int, sLastTime string) {
@@ -81,33 +68,4 @@ func LoadConfig(filepath string, group, account int, sLastTime string) {
 	if sLastTime != "" {
 		Conf.LastTime = sLastTime
 	}
-
-	for _, v := range Conf.Nodes {
-		key := v.NodeKey
-		if !strings.Contains(key, "0x") {
-			key = "0x" + key
-		}
-
-		enc, err := hexutil.Decode(key)
-		if err != nil {
-			panic(err)
-		}
-
-		privKey, err := crypto.ToECDSA(enc)
-		if err != nil {
-			panic(err)
-		}
-		v.PrivateKey = privKey
-		v.PublicKey = &privKey.PublicKey
-		v.Address = crypto.PubkeyToAddress(*v.PublicKey)
-	}
-}
-
-func LoadParams(fileName string, data interface{}) error {
-	filepath := files.FullPath(Conf.Workspace, "cases", fileName)
-	bz, err := ioutil.ReadFile(filepath)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(bz, data)
 }
