@@ -250,6 +250,23 @@ func (c *Account) TxNum(contract common.Address) (uint64, error) {
 	}
 }
 
+func (c *Account) Exist(contract common.Address) bool {
+	if c.sender == nil {
+		return false
+	}
+
+	st, err := stat.NewStat(contract, c.sender.client)
+	if err != nil {
+		return false
+	}
+
+	if startTime, _ := st.StartTime(nil); startTime > 0 {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (c *Account) Nonce() uint64 {
 	defer func() {
 		c.nonce += 1

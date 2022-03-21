@@ -6,6 +6,7 @@ import (
 
 	"github.com/dylenfu/zion-meter/config"
 	"github.com/dylenfu/zion-meter/pkg/sdk"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func masterAccount() (*sdk.Account, error) {
@@ -68,6 +69,24 @@ func generateAccounts() (int, [][]*User, error) {
 	}
 
 	return total, list, nil
+}
+
+func resetOrDeployContract(acc *sdk.Account, oldContract common.Address, startTime uint64) (common.Address, error) {
+	if acc.Exist(oldContract) {
+		if _, err := acc.Reset(oldContract, startTime); err != nil {
+			return common.EmptyAddress, err
+		}
+		return oldContract, nil
+	}
+
+	newContract, err := acc.Deploy()
+	if err != nil {
+		return common.EmptyAddress, err
+	}
+	if _, err := acc.Reset(newContract, startTime); err != nil {
+		return newContract, err
+	}
+	return newContract, nil
 }
 
 func InternalIP() string {

@@ -44,7 +44,7 @@ func TPS() bool {
 	startTime := uint64(time.Now().Unix())
 	if leader {
 		log.Info("try to reset contract...")
-		if _, err := master.Reset(contract, startTime); err != nil {
+		if contract, err = resetOrDeployContract(master, contract, startTime); err != nil {
 			log.Errorf("reset test contract failed, err: %v", err)
 			return false
 		}
