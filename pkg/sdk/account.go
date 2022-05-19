@@ -25,7 +25,9 @@ import (
 
 var ErrNoSender = errors.New("no sender")
 
-var ABI *abi.ABI
+var (
+	ABI *abi.ABI
+)
 
 func init() {
 	ab, err := abi.JSON(strings.NewReader(stat.StatABI))
