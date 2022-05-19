@@ -1,7 +1,11 @@
 #!/bin/bash
 
-workdir=~/software/hotstuff/zion-meter/pkg/go_abi/stat_abi
+basedir=~/software/hotstuff/zion-meter/pkg/go_abi
+list=(stat data_stat)
 
-mkdir -p $workdir
-
-abigen --sol stat.sol --pkg stat_abi > $workdir/stat_abi.go
+for fn in ${list[*]}; do
+    abiname=${fn}_abi
+    workdir=$basedir/$abiname
+    mkdir -p $workdir
+    abigen --sol ${fn}.sol --pkg $abiname > $workdir/${abiname}.go
+done
