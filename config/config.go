@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	MinTPS   = 100
+	MinTPS   = 50
 	MinGroup = 2
 )
 
