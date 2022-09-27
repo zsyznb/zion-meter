@@ -103,6 +103,15 @@ func NewAccount() (*Account, error) {
 	}, nil
 }
 
+func NewAccounts(num int) []*Account {
+	accs := make([]*Account, 0)
+	for i := 1; i <= num; i++ {
+		acc, _ := NewAccount()
+		accs = append(accs, acc)
+	}
+	return accs
+}
+
 func (c *Account) SetSender(sender *Sender) {
 	c.sender = sender
 }

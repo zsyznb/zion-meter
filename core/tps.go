@@ -96,16 +96,18 @@ func TPS() bool {
 const userSigChanCap = 100
 
 type User struct {
-	acc  *sdk.Account
+	accs []*sdk.Account
 	sig  chan struct{}
 	quit chan struct{}
+	flag int
 }
 
-func newUser(acc *sdk.Account) *User {
+func newUser(accs []*sdk.Account) *User {
 	return &User{
-		acc:  acc,
+		accs: accs,
 		sig:  make(chan struct{}, userSigChanCap),
 		quit: make(chan struct{}, 1),
+		flag: 0,
 	}
 }
 
@@ -113,9 +115,12 @@ func (u *User) run(contract common.Address) {
 	for {
 		select {
 		case <-u.sig:
-			if tx, nonce, err := u.acc.Add(contract); err != nil {
-				log.Errorf("send tx %s failed, nonce %d, err: %v", tx.Hex(), nonce, err)
-				u.acc.ResetNonce(nonce)
+			if tx, nonce, err := u.accs[u.flag].Add(contract); err != nil {
+				log.Errorf("user: %v,send tx %s failed, nonce %d, err: %v", u.flag, tx.Hex(), nonce, err)
+				u.accs[u.flag].ResetNonce(nonce)
+				u.flag = (u.flag + 1) % 3
+				u.sig <- struct{}{}
+				u.run(contract)
 			}
 		case <-u.quit:
 			return
@@ -138,12 +143,13 @@ func (b *Box) Deposit() error {
 	allUser := make(map[common.Address]struct{})
 
 	// 先用master给某个新用户转出本次测试总共所需要的gas
-	userCnt := config.Conf.Groups * config.Conf.AccsPerGroup
+	userCnt := config.Conf.Groups * config.Conf.UsrsPerGroup
 	sender, err := singleAccount()
 	if err != nil {
 		return err
 	}
 	amount := new(big.Int).Add(new(big.Int).Mul(big.NewInt(int64(userCnt)), gasUsage), ETH1)
+	amount.Mul(amount, big.NewInt(int64(3)))
 	if _, err := b.master.TransferWithConfirm(sender.Address(), amount); err != nil {
 		return err
 	}
@@ -152,10 +158,12 @@ func (b *Box) Deposit() error {
 	// 然后由新用户独立给每个用户转gasusage
 	for _, group := range b.groups {
 		for _, user := range group {
-			if _, err := sender.Transfer(user.acc.Address(), gasUsage); err != nil {
-				return err
+			for i := 0; i < 3; i++ {
+				if _, err := sender.Transfer(user.accs[i].Address(), gasUsage); err != nil {
+					return err
+				}
+				allUser[user.accs[i].Address()] = struct{}{}
 			}
-			allUser[user.acc.Address()] = struct{}{}
 		}
 	}
 
