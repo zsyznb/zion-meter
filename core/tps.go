@@ -228,7 +228,7 @@ func (b *Box) Simulate() {
 			}
 
 			cnt += 1
-			log.Infof("group %d send txs %d", idx, txn)
+			log.Infof("g: %d t: %d", idx, txn)
 		case <-b.quit:
 			return
 		}
