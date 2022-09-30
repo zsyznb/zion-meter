@@ -242,7 +242,7 @@ func (b *Box) Simulate() {
 			}
 
 			cnt += 1
-			log.Debugf("group: %d transaction: %d", idx, txn)
+			log.Infof("group: %d transaction: %d", idx, txn)
 		case <-b.quit:
 			return
 		}
