@@ -2,6 +2,7 @@ package core
 
 import (
 	"math/big"
+	"sync/atomic"
 	"time"
 
 	"github.com/dylenfu/zion-meter/config"
@@ -98,6 +99,8 @@ const userSigChanCap = 100
 type User struct {
 	accs []*sdk.Account
 	sig  chan struct{}
+	halt chan struct{}
+	lock int32
 	quit chan struct{}
 	flag int
 }
@@ -117,10 +120,11 @@ func (u *User) run(contract common.Address) {
 		case <-u.sig:
 			if tx, nonce, err := u.accs[u.flag].Add(contract); err != nil {
 				log.Errorf("user: %v,send tx %s failed, nonce %d, err: %v", u.flag, tx.Hex(), nonce, err)
+				atomic.StoreInt32(&u.lock, 1)
 				u.accs[u.flag].ResetNonce(nonce)
 				u.flag = (u.flag + 1) % 3
-				u.sig <- struct{}{}
-				u.run(contract)
+				time.Sleep(240 * time.Second)
+				atomic.StoreInt32(&u.lock, 0)
 			}
 		case <-u.quit:
 			return
@@ -232,11 +236,13 @@ func (b *Box) Simulate() {
 			}
 
 			for _, user := range group[:txn] {
-				user.sig <- struct{}{}
+				if user.lock == 0 {
+					user.sig <- struct{}{}
+				}
 			}
 
 			cnt += 1
-			log.Infof("g: %d t: %d", idx, txn)
+			log.Debugf("group: %d transaction: %d", idx, txn)
 		case <-b.quit:
 			return
 		}
@@ -247,6 +253,7 @@ func (b *Box) CalculateTPS() {
 	// n组全部轮完算一轮tps
 	ticker := time.NewTicker(time.Duration(config.Conf.Groups) * time.Second)
 
+	maxTPS := uint64(0)
 	lastTxn := uint64(0)
 	lastEndTime := uint64(time.Now().Unix())
 	for {
@@ -262,9 +269,12 @@ func (b *Box) CalculateTPS() {
 				txAdded := total - lastTxn
 				duration := endTime - lastEndTime
 				tps := txAdded / duration
+				if tps >= maxTPS {
+					maxTPS = tps
+				}
 				average := total / (endTime - b.startTime)
-				log.Infof("start time %d, end time %d, total tx number %d, duration %d, tx added %d, tps %d, average %d",
-					lastEndTime, endTime, total, duration, txAdded, tps, average)
+				log.Infof("start time %d, end time %d, total tx number %d, duration %d, tx added %d, tps %d,max tps %d, average %d",
+					lastEndTime, endTime, total, duration, txAdded, tps, maxTPS, average)
 				lastTxn = total
 				lastEndTime = endTime
 			}
