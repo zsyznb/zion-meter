@@ -1,8 +1,0 @@
-{
-  "Workspace": "/Users/zhaosiyuan/software/hotstuff/Zion-meter/zion-tool/build/local",
-  "ChainID": 60801,
-  "Sharding": false,
-  "Contract": "",
-  "NodeKey": "562aa98da69477996bd82422b97698541f25e71ba2f803970947b3ad8bdb7afa",
-  "Nodes": ["http://localhost:22000","http://localhost:22001","http://localhost:22002","http://localhost:22003"]
-}
