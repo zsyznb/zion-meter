@@ -43,7 +43,7 @@ func generateAccounts() (int, [][]*User, error) {
 	for i := 0; i < connNum; i++ {
 		node := config.Conf.Nodes[i%nodeNum]
 		senders := make([]*sdk.Sender, 0)
-		for j := 0; j < 3; j++ {
+		for j := 0; j < config.Conf.AccoutsPerUser; j++ {
 			sender, err := sdk.NewSender(node, chainID)
 			if err != nil {
 				return 0, nil, err
@@ -61,7 +61,7 @@ func generateAccounts() (int, [][]*User, error) {
 	for i := 0; i < groupNo; i++ {
 		group := make([]*User, 0)
 		for j := 0; j < AccNoPerGroup; j++ {
-			accs := sdk.NewAccounts(3)
+			accs := sdk.NewAccounts(config.Conf.AccoutsPerUser)
 			index := (i*AccNoPerGroup + j) % connNum
 			for num, acc := range accs {
 				acc.SetSender(senderList[index][num])

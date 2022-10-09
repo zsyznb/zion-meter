@@ -122,7 +122,7 @@ func (u *User) run(contract common.Address) {
 				log.Errorf("user: %v,send tx %s failed, nonce %d, err: %v", u.flag, tx.Hex(), nonce, err)
 				atomic.StoreInt32(&u.lock, 1)
 				u.accs[u.flag].ResetNonce(nonce)
-				u.flag = (u.flag + 1) % 3
+				u.flag = (u.flag + 1) % config.Conf.AccoutsPerUser
 				time.Sleep(240 * time.Second)
 				atomic.StoreInt32(&u.lock, 0)
 			}
@@ -153,7 +153,7 @@ func (b *Box) Deposit() error {
 		return err
 	}
 	amount := new(big.Int).Add(new(big.Int).Mul(big.NewInt(int64(userCnt)), gasUsage), ETH1)
-	amount.Mul(amount, big.NewInt(int64(3)))
+	amount.Mul(amount, big.NewInt(int64(config.Conf.AccoutsPerUser)))
 	if _, err := b.master.TransferWithConfirm(sender.Address(), amount); err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func (b *Box) Deposit() error {
 	// 然后由新用户独立给每个用户转gasusage
 	for _, group := range b.groups {
 		for _, user := range group {
-			for i := 0; i < 3; i++ {
+			for i := 0; i < config.Conf.AccoutsPerUser; i++ {
 				if _, err := sender.Transfer(user.accs[i].Address(), gasUsage); err != nil {
 					return err
 				}

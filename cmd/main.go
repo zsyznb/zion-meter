@@ -13,11 +13,12 @@ import (
 )
 
 var (
-	loglevel      int    // log level [1: debug, 2: info]
-	configpath    string //config file
-	Methods       string //Methods list in cmdline
-	users, groups int
-	lastTime      string
+	loglevel        int    // log level [1: debug, 2: info]
+	configpath      string //config file
+	Methods         string //Methods list in cmdline
+	users, groups   int
+	lastTime        string
+	accountsPerUser int
 )
 
 func init() {
@@ -27,6 +28,7 @@ func init() {
 	flag.IntVar(&users, "user", 20, "`user` denote that user number per group")
 	flag.StringVar(&lastTime, "last", "10m", "`last` denote the program executing time")
 	flag.IntVar(&loglevel, "loglevel", 2, "loglevel [1: debug, 2: info]")
+	flag.IntVar(&accountsPerUser, "accounts", 3, "accounts per user")
 
 	flag.Parse()
 }
@@ -36,7 +38,7 @@ func main() {
 	defer time.Sleep(time.Second)
 
 	log.InitLog(loglevel, log.Stdout)
-	config.LoadConfig(configpath, groups, users, lastTime)
+	config.LoadConfig(configpath, groups, users, lastTime, accountsPerUser)
 	core.Endpoint()
 
 	methods := make([]string, 0)

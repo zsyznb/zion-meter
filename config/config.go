@@ -33,19 +33,20 @@ var (
 )
 
 type Config struct {
-	Workspace    string
-	ChainID      uint64
-	Groups       int    // 账户分组，总组数为`Groups`，每秒切换不同组用户发送交易
-	UsrsPerGroup int    // 每组用户数量
-	Sharding     bool   // 是否需要多台机器测试
-	FirstMachine string // 第一台机器内网地址，只需第一台机器统计tps，其他的不需要
-	LastTime     string
-	Contract     string
-	NodeKey      string
-	Nodes        []string
+	Workspace      string
+	ChainID        uint64
+	Groups         int    // 账户分组，总组数为`Groups`，每秒切换不同组用户发送交易
+	UsrsPerGroup   int    // 每组用户数量
+	Sharding       bool   // 是否需要多台机器测试
+	FirstMachine   string // 第一台机器内网地址，只需第一台机器统计tps，其他的不需要
+	LastTime       string
+	Contract       string
+	NodeKey        string
+	Nodes          []string
+	AccoutsPerUser int //每个用户分配的账户数量
 }
 
-func LoadConfig(filepath string, group, account int, sLastTime string) {
+func LoadConfig(filepath string, group, account int, sLastTime string, accountsPerUser int) {
 	if account < MinTPS || group < MinGroup {
 		panic("user per group should > 20 and group number should > 2")
 	}
@@ -67,5 +68,9 @@ func LoadConfig(filepath string, group, account int, sLastTime string) {
 	}
 	if sLastTime != "" {
 		Conf.LastTime = sLastTime
+	}
+
+	if accountsPerUser > 0 {
+		Conf.AccoutsPerUser = accountsPerUser
 	}
 }
