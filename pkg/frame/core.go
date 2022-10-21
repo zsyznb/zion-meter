@@ -1,6 +1,8 @@
 package frame
 
 import (
+	"context"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"time"
 
 	"github.com/dylenfu/zion-meter/pkg/log"
@@ -97,14 +99,17 @@ func (pt *PaletteTool) onFinish(methodsList []string) {
 	succCount := len(successList)
 	failedCount := len(failedList)
 	endTime := time.Now().Unix()
+	client, _ := ethclient.Dial("http://localhost:22000")
+	blocknumber, _ := client.BlockNumber(context.Background())
 
 	log.Info("===============================================================")
-	log.Infof("Zion Tool Finish Total:%v Success:%v Failed:%v Skip:%v, SpendTime:%d sec",
+	log.Infof("Zion Tool Finish Total:%v Success:%v Failed:%v Skip:%v, SpendTime:%d sec,end block:%d",
 		len(methodsList),
 		succCount,
 		failedCount,
 		len(methodsList)-succCount-failedCount,
 		endTime-startTime,
+		int(blocknumber),
 	)
 
 	if succCount > 0 {
