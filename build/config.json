@@ -2,7 +2,7 @@
   "Workspace": "/data/zion-meter/build",
   "ChainID": 60801,
   "Sharding": false,
-  "Contract": "",
+  "Contract": "0xC8Cd072B1C77f1e5628502234775Ac8aB1E30926",
   "NodeKey": "282984e27098e65c24901f8eae8914dce4b5b62325ccbdacc8ce9a75629eb783",
   "Nodes": ["http://10.203.0.20:22000","http://10.203.0.20:22001","http://10.203.0.43:22000","http://10.203.0.43:22001"]
 }
