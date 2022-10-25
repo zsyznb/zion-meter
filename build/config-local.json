@@ -1,0 +1,9 @@
+{
+    "Workspace": "/Users/zhaosiyuan/software/hotstuff/Zion-meter/zion-meter/build",
+    "ChainID": 60801,
+    "Chainspace": "/Users/zhaosiyuan/software/hotstuff/test",
+    "Sharding": false,
+    "Contract": "0xC8Cd072B1C77f1e5628502234775Ac8aB1E30926",
+    "NodeKey": ["282984e27098e65c24901f8eae8914dce4b5b62325ccbdacc8ce9a75629eb783","dcd008522718b572ccbbe59cc5aa0936e53be8606489da2b35e0d25d01ebac50"],
+    "Nodes": ["http://localhost:22000","http://localhost:22001","http://localhost:22002","http://localhost:22003"]
+}
