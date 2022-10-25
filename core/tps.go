@@ -23,7 +23,8 @@ func TPS() bool {
 
 	// generate master account
 	log.Info("try to generate master account...")
-	master, err := masterAccount()
+	num, master, err := masterAccount()
+	log.Info("num:%v", num)
 	if err != nil {
 		log.Errorf("load master account failed, err: %v", err)
 		return false

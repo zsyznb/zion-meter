@@ -2,6 +2,8 @@ package core
 
 import (
 	"net"
+	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/dylenfu/zion-meter/config"
@@ -9,14 +11,17 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func masterAccount() (*sdk.Account, error) {
+func masterAccount() (int, *sdk.Account, error) {
 	chainID := config.Conf.ChainID
 	node := config.Conf.Nodes[0]
 	sender, err := sdk.NewSender(node, chainID)
 	if err != nil {
-		return nil, err
+		return 1, nil, err
 	}
-	return sdk.MasterAccount(sender, config.Conf.NodeKey)
+	filename := filepath.Base(config.Conf.Chainspace)
+	num, _ := strconv.Atoi(filename[len(filename)-1:])
+	acc, err := sdk.MasterAccount(sender, config.Conf.NodeKey[num])
+	return num, acc, err
 }
 
 func singleAccount() (*sdk.Account, error) {

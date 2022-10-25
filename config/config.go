@@ -34,6 +34,7 @@ var (
 
 type Config struct {
 	Workspace      string
+	Chainspace     string
 	ChainID        uint64
 	Groups         int    // 账户分组，总组数为`Groups`，每秒切换不同组用户发送交易
 	UsrsPerGroup   int    // 每组用户数量
@@ -41,7 +42,7 @@ type Config struct {
 	FirstMachine   string // 第一台机器内网地址，只需第一台机器统计tps，其他的不需要
 	LastTime       string
 	Contract       string
-	NodeKey        string
+	NodeKey        []string
 	Nodes          []string
 	AccoutsPerUser int //每个用户分配的账户数量
 }
