@@ -1,8 +1,8 @@
 package core
 
 import (
+	"io/ioutil"
 	"net"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -18,8 +18,16 @@ func masterAccount() (int, *sdk.Account, error) {
 	if err != nil {
 		return 1, nil, err
 	}
-	filename := filepath.Base(config.Conf.Chainspace)
-	num, _ := strconv.Atoi(filename[len(filename)-1:])
+	files, _ := ioutil.ReadDir(config.Conf.Chainspace)
+	num := 100
+	for _, file := range files {
+		if file.Name()[:len(file.Name())-1] == "node" {
+			n, _ := strconv.Atoi(file.Name()[len(file.Name())-1:])
+			if n < num {
+				num = n
+			}
+		}
+	}
 	acc, err := sdk.MasterAccount(sender, config.Conf.NodeKey[num])
 	return num, acc, err
 }
