@@ -21,10 +21,12 @@ func masterAccount() (int, *sdk.Account, error) {
 	files, _ := ioutil.ReadDir(config.Conf.Chainspace)
 	num := 100
 	for _, file := range files {
-		if file.Name()[:4] == "node" {
-			n, _ := strconv.Atoi(file.Name()[4:])
-			if n < num {
-				num = n
+		if len(file.Name()) >= 4 {
+			if file.Name()[:4] == "node" {
+				n, _ := strconv.Atoi(file.Name()[4:])
+				if n < num {
+					num = n
+				}
 			}
 		}
 	}
